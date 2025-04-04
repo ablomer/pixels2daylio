@@ -15,6 +15,40 @@ def load_tag_mappings(mapping_file='tag_mappings.csv'):
         return {}
     return tag_mappings
 
+def load_keyword_mappings(mapping_file='keyword_mappings.csv'):
+    """Load keyword to tag mappings from CSV file"""
+    keyword_mappings = {}
+    try:
+        with open(mapping_file, 'r', encoding='utf-8') as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                keyword = row['keyword'].lower()
+                if keyword not in keyword_mappings:
+                    keyword_mappings[keyword] = []
+                keyword_mappings[keyword].append(row['daylio_tag'])
+    except (FileNotFoundError, csv.Error):
+        return {}
+    return keyword_mappings
+
+def find_tags_from_keywords(note, keyword_mappings, daylio_tags, daylio_tag_groups, existing_tag_ids=None):
+    """Find Daylio tags based on keywords in the note"""
+    tag_ids = []
+    if not note or not keyword_mappings:
+        return tag_ids
+        
+    note_lower = note.lower()
+    existing_tag_ids = existing_tag_ids or []
+    
+    for keyword, tag_names in keyword_mappings.items():
+        if keyword in note_lower:
+            for tag_name in tag_names:
+                # Find the tag in Daylio tags
+                tag = next((t for t in daylio_tags if t["name"] == tag_name), None)
+                if tag and tag["id"] not in existing_tag_ids and tag["id"] not in tag_ids:
+                    tag_ids.append(tag["id"])
+    
+    return tag_ids
+
 def parse_pixels_date(date_str):
     """Convert Pixels date string to Daylio datetime components"""
     date = dt.strptime(date_str, "%Y-%m-%d")
@@ -54,8 +88,9 @@ def convert_pixels_tags(pixels_tags, daylio_tags, daylio_tag_groups, tag_mapping
 
 def merge_backups(pixels_file, daylio_file, output_file):
     try:
-        # Load tag mappings
+        # Load mappings
         tag_mappings = load_tag_mappings()
+        keyword_mappings = load_keyword_mappings()
         
         # Read Pixels backup
         with open(pixels_file, 'r', encoding='utf-8') as f:
@@ -76,13 +111,24 @@ def merge_backups(pixels_file, daylio_file, output_file):
             # Parse date
             date_info = parse_pixels_date(entry["date"])
             
-            # Convert tags
+            # Convert tags from Pixels tags
             tag_ids = convert_pixels_tags(
                 entry["tags"],
                 daylio_data["tags"],
                 daylio_data["tag_groups"],
                 tag_mappings
             )
+            
+            # Add tags from keywords in the note
+            if entry["notes"]:
+                keyword_tag_ids = find_tags_from_keywords(
+                    entry["notes"],
+                    keyword_mappings,
+                    daylio_data["tags"],
+                    daylio_data["tag_groups"],
+                    tag_ids  # Pass existing tag IDs to prevent duplicates
+                )
+                tag_ids.extend(keyword_tag_ids)
             
             # Create Daylio entry
             daylio_entry = {

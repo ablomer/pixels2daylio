@@ -57,8 +57,18 @@ pixels_tag,daylio_tag
 
 For example:
 ```csv
+pixels_tag,daylio_tag
 Work,Job
 Exercise,Sports
+```
+
+### Keyword Mappings
+
+Create a `keyword_mappings.csv` file to automatically add tags based on note content:
+```csv
+keyword,daylio_tag
+work,Work
+gym,Exercise
 ```
 
 ## File Structure
