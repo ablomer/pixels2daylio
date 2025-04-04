@@ -6,6 +6,7 @@ A Python tool to merge Pixels app backup file into existing Daylio backup file.
 
 - Merge Pixels backup file into Daylio backup file
 - Support for tag mapping between Pixels and Daylio
+- Automatically adds tags based on keywords in notes
 
 ## Prerequisites
 
@@ -78,6 +79,7 @@ gym,Exercise
 - `encode_backup.py`: Encodes JSON back into Daylio backup format
 - `format_json.py`: Formats JSON files for better readability
 - `tag_mappings.csv`: Maps Pixels tags to Daylio tags
+- `keyword_mappings.csv`: Maps note keywords to Daylio tags
 
 ## Notes
 
